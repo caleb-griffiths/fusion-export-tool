@@ -1,0 +1,13 @@
+{
+	"autodeskProduct":	"Fusion",
+	"type":	"addin",
+	"author":	"Caleb Griffiths",
+	"description":	{
+		"":	"Exports all configurations from a Configured Design to .step files"
+	},
+	"version":	"",
+	"runOnStartup":	false,
+	"supportedOS":	"windows",
+	"editEnabled":	true,
+	"iconFilename":	"AddInIcon.svg"
+}

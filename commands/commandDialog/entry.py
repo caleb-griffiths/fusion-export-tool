@@ -8,8 +8,8 @@ ui = app.userInterface
 
 # TODO *** Specify the command identity information. ***
 CMD_ID = f'{config.COMPANY_NAME}_{config.ADDIN_NAME}_cmdDialog'
-CMD_NAME = 'Command Dialog Sample'
-CMD_Description = 'A Fusion Add-in Command with a dialog'
+CMD_NAME = 'EXPORT ALL TO STEP'
+CMD_Description = 'Export all configurations in this design to STEP files'
 
 # Specify that the command will be promoted to the panel.
 IS_PROMOTED = True
@@ -80,13 +80,16 @@ def command_created(args: adsk.core.CommandCreatedEventArgs):
 
     # TODO Define the dialog for your command by adding different inputs to the command.
 
-    # Create a simple text box input.
-    inputs.addTextBoxCommandInput('text_box', 'Some Text', 'Enter some text.', 1, False)
-
-    # Create a value input field and set the default using 1 unit of the default length unit.
-    defaultLengthUnits = app.activeProduct.unitsManager.defaultLengthUnits
-    default_value = adsk.core.ValueInput.createByString('1')
-    inputs.addValueInput('value_input', 'Some Value', defaultLengthUnits, default_value)
+    inputs.addStringValueInput('author_input', 'Author', 'Caleb Griffiths')
+    inputs.addStringValueInput('organization_input', 'Organization', 'The Metal Company')
+    inputs.addStringValueInput('authorization_input', 'Authorization', 'S. Fisher & Sons Ltd T/A The Metal Company')
+    inputs.addBoolValueInput(
+        'select_folder_input',
+        'Export Folder',
+        False,
+        '',
+        True
+    )
 
     # TODO Connect to the events that are needed by this command.
     futil.add_handler(args.command.execute, command_execute, local_handlers=local_handlers)
@@ -106,13 +109,20 @@ def command_execute(args: adsk.core.CommandEventArgs):
 
     # Get a reference to your command's inputs.
     inputs = args.command.commandInputs
-    text_box: adsk.core.TextBoxCommandInput = inputs.itemById('text_box')
-    value_input: adsk.core.ValueCommandInput = inputs.itemById('value_input')
+    author_input = inputs.itemById('author_input')
+    organization_input = inputs.itemById('organization_input')
+    authorization_input = inputs.itemById('authorization_input')
 
-    # Do something interesting
-    text = text_box.text
-    expression = value_input.expression
-    msg = f'Your text: {text}<br>Your value: {expression}'
+    author = author_input.value
+    organization = organization_input.value
+    authorization = authorization_input.value
+
+    msg = (
+        f'Author: {author}<br>'
+        f'Organization: {organization}<br>'
+        f'Authorization: {authorization}'
+    )
+
     ui.messageBox(msg)
 
 
@@ -127,11 +137,18 @@ def command_preview(args: adsk.core.CommandEventArgs):
 # allowing you to modify values of other inputs based on that change.
 def command_input_changed(args: adsk.core.InputChangedEventArgs):
     changed_input = args.input
-    inputs = args.inputs
 
-    # General logging for debug.
-    futil.log(f'{CMD_NAME} Input Changed Event fired from a change to {changed_input.id}')
+    if changed_input.id == 'Select_folder_input':
+        folder_dialog = ui.createFolderDialog()
+        folder_dialog.title = 'Select STEP Export Folder'
 
+        dialog_result = folder_dialog.showDialog()
+
+        if dialog_result == adsk.core.DialogResults.DialogOK:
+            export_folder = folder_dialog.folder
+
+            folder_input = args.inputs.itemById('Select_folder_input')
+            folder_input.text = export_folder
 
 # This event handler is called when the user interacts with any of the inputs in the dialog
 # which allows you to verify that all of the inputs are valid and enables the OK button.
@@ -142,12 +159,7 @@ def command_validate_input(args: adsk.core.ValidateInputsEventArgs):
     inputs = args.inputs
     
     # Verify the validity of the input values. This controls if the OK button is enabled or not.
-    valueInput = inputs.itemById('value_input')
-    if valueInput.value >= 0:
-        args.areInputsValid = True
-    else:
-        args.areInputsValid = False
-        
+    args.areInputsValid = True        
 
 # This event handler is called when the command terminates.
 def command_destroy(args: adsk.core.CommandEventArgs):

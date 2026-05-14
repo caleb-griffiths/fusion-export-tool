@@ -105,26 +105,14 @@ def command_execute(args: adsk.core.CommandEventArgs):
     # General logging for debug.
     futil.log(f'{CMD_NAME} Command Execute Event')
 
-    # TODO ******************************** Your code here ********************************
+    product = app.activeProduct
+    design = adsk.fusion.Design.cast(product)
 
-    # Get a reference to your command's inputs.
-    inputs = args.command.commandInputs
-    author_input = inputs.itemById('author_input')
-    organization_input = inputs.itemById('organization_input')
-    authorization_input = inputs.itemById('authorization_input')
-
-    author = author_input.value
-    organization = organization_input.value
-    authorization = authorization_input.value
-
-    msg = (
-        f'Author: {author}<br>'
-        f'Organization: {organization}<br>'
-        f'Authorization: {authorization}'
-    )
-
-    ui.messageBox(msg)
-
+    if not design:
+        ui.messageBox('No active Fusion design found!')
+        return
+    
+    ui.messageBox(f'Active design found:<br>{design.parentDocument.name}')
 
 # This event handler is called when the command needs to compute a new preview in the graphics window.
 def command_preview(args: adsk.core.CommandEventArgs):
@@ -138,7 +126,7 @@ def command_preview(args: adsk.core.CommandEventArgs):
 def command_input_changed(args: adsk.core.InputChangedEventArgs):
     changed_input = args.input
 
-    if changed_input.id == 'Select_folder_input':
+    if changed_input.id == 'select_folder_input':
         folder_dialog = ui.createFolderDialog()
         folder_dialog.title = 'Select STEP Export Folder'
 
@@ -147,7 +135,7 @@ def command_input_changed(args: adsk.core.InputChangedEventArgs):
         if dialog_result == adsk.core.DialogResults.DialogOK:
             export_folder = folder_dialog.folder
 
-            folder_input = args.inputs.itemById('Select_folder_input')
+            folder_input = args.inputs.itemById('select_folder_input')
             folder_input.text = export_folder
 
 # This event handler is called when the user interacts with any of the inputs in the dialog

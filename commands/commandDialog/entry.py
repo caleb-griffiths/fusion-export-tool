@@ -102,17 +102,100 @@ def command_created(args: adsk.core.CommandCreatedEventArgs):
 # This event handler is called when the user clicks the OK button in the command dialog or 
 # is immediately called after the created event not command inputs were created for the dialog.
 def command_execute(args: adsk.core.CommandEventArgs):
-    # General logging for debug.
     futil.log(f'{CMD_NAME} Command Execute Event')
+
+    inputs = args.command.commandInputs
+
+    author_input = inputs.itemById('author_input')
+    organization_input = inputs.itemById('organization_input')
+    authorization_input = inputs.itemById('authorization_input')
+    folder_input = inputs.itemById('select_folder_input')
+
+    author = author_input.value
+    organization = organization_input.value
+    authorization = authorization_input.value
+    export_folder = folder_input.text
 
     product = app.activeProduct
     design = adsk.fusion.Design.cast(product)
 
     if not design:
-        ui.messageBox('No active Fusion design found!')
+        ui.messageBox('No active Fusion design found...')
         return
     
-    ui.messageBox(f'Active design found:<br>{design.parentDocument.name}')
+    config_table = design.configurationTopTable
+
+    if not config_table:
+        ui.messageBox('No configurations found...')
+        return
+    
+    if not export_folder:
+        ui.messageBox('Please select an export location first.')
+        return
+    
+    export_manager = design.exportManager
+    exported_files = []
+
+    progress_dialog = ui.createProgressDialog()
+    progress_dialog.cancelButtonShown = True
+    progress_dialog.isBackgroundTranslucent = False
+    progress_dialog.show(
+        'Exporting Configurations',
+        'Exporting %v of %m Configurations...',
+        0,
+        config_table.rows.count
+    )
+
+    for i in range(config_table.rows.count):
+        row = config_table.rows.item(i)
+
+        current_number = i + 1
+        total_count = config_table.rows.count
+        percent_done = int((current_number / total_count) * 100)
+
+        progress_dialog.message = (
+            'Exporting ' + str(current_number) + ' of ' + str(total_count) + 
+            ' Configurations (' + str(percent_done) + '%) ...\n\n' +
+            'Exporting: ' + row.name + '.step'
+        )
+
+        progress_dialog.progressValue = current_number
+
+        row.activate()
+
+        file_name = row.name + '.step'
+        file_path = export_folder + '\\' + file_name
+
+        step_options = export_manager.createSTEPExportOptions(file_path)
+        export_manager.execute(step_options)
+
+        with open(file_path, 'r', encoding='utf-8', errors='replace') as file:
+            step_text = file.read()
+
+        step_text = step_text.replace(
+            "/* author */ (''),",
+            f"/* author */ ('{author}'),"
+        )
+
+        step_text = step_text.replace(
+            "/* organization */ (''),",
+            f"/* organization */ ('{organization}'),"
+        )
+
+        step_text = step_text.replace(
+            "/* authorisation */ '');",
+            f"/* authorisation */ '{authorization}');"
+        )
+
+        with open(file_path, 'w', encoding='utf-8') as file:
+            file.write(step_text)
+
+        exported_files.append(file_name)
+
+    ui.messageBox(
+        'Configurations Exported: ' + str(len(exported_files)) + '\n\n' +
+        '\n'.join(exported_files)
+    )
 
 # This event handler is called when the command needs to compute a new preview in the graphics window.
 def command_preview(args: adsk.core.CommandEventArgs):

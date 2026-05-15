@@ -5,8 +5,8 @@
 	"description":	{
 		"":	"Exports all configurations from a Configured Design to .step files"
 	},
-	"version":	"",
-	"runOnStartup":	false,
+	"version":	"1.0",
+	"runOnStartup":	true,
 	"supportedOS":	"windows",
 	"editEnabled":	true,
 	"iconFilename":	"AddInIcon.svg"

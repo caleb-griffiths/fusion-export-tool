@@ -192,6 +192,8 @@ def command_execute(args: adsk.core.CommandEventArgs):
 
         exported_files.append(file_name)
 
+    progress_dialog.hide()
+
     ui.messageBox(
         'Configurations Exported: ' + str(len(exported_files)) + '\n\n' +
         '\n'.join(exported_files)
